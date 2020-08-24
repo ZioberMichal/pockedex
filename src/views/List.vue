@@ -4,7 +4,7 @@
     <h2><input type="text" v-model="filterByName" @keyup="filterPokemons"></h2>
     <div class="card-columns">
         <div v-for="item in items" class="card bg-light mb-3" style="width: 13rem;">
-            <Pokemon :enpoint=item.url />
+            <Pokemon :data=item />
         </div>
     </div>
   </div>
@@ -13,6 +13,7 @@
 <script>
 // @ is an alias to /src
 import Pokemon from '@/components/Pokemon.vue'
+import PokemonApi from '../logic/PokemonApi'
 
 export default {
   name: 'List',
@@ -27,24 +28,18 @@ export default {
     }
   },
   mounted() {
-    const offset = 0;//Math.floor(Math.random() * Math.floor(100));
-    fetch("https://pokeapi.co/api/v2/pokemon?limit=30&offset=" + offset).then((resp) => {
-        resp.json().then((obj) => {
-            this.items = obj.results;
-            this.allPokemons = obj.results.slice();
-            fetch(obj.url).then((pokemonResp) => {
-                pokemonResp.json().then((pokemonObj) => {
-                    this.allPokemons.push({});
-                this.resp = obj;
-                this.name = obj.name;
-                this.id = obj.id;
-                this.img = obj.sprites.front_default;
-                this.types = obj.types.map(t => t.type.name);
-                this.detailsUrl = "/pokemon/" + obj.id;
-                });
-            });
-        });
+    const pokemonApi = new PokemonApi();
+    pokemonApi.listPokemons().then(pokemons => {
+        this.items = pokemons;
+        this.allPokemons = pokemons;
     });
+  },
+  computed() {
+    const sortFun = function(p0, p1) {
+        return p0.id - p1.id;
+    }
+    this.items = this.items.sort(sortFun);
+    this.allPokemons = this.allPokemons.sort(sortFun);
   },
   methods: {
     filterPokemons() {
@@ -52,8 +47,8 @@ export default {
           this.items = this.allPokemons;
           return;
       }
-      this.items = [];
-      this.items = this.allPokemons.filter(p => p.name.startsWith(this.filterByName)).slice();
+
+      this.items = this.allPokemons.filter(p => p.name.startsWith(this.filterByName));
     }
   }
 }
