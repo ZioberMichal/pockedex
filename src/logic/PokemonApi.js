@@ -1,3 +1,6 @@
+import PokemonListMapper from "./mappers/PokemonListMapper";
+import PokemonDetailsMapper from "./mappers/PokemonDetailsMapper";
+
 export default class PokemonApi {
     constructor() {
         this.domain = "https://pokeapi.co/";
@@ -13,29 +16,35 @@ export default class PokemonApi {
         
         let promiseResolve;
         const pokemonsPromise = new Promise(function(resolve) { promiseResolve = resolve; });
-        fetch(url).then(listResp => {
-            listResp.json().then(listJson => {
-                const pokemons = [];
-                let noOfPokemons = listJson.results.length;
-                listJson.results.forEach(pokemon => {
-                    fetch(pokemon.url).then(pokemonResp => {
-                        pokemonResp.json().then(pokemon => {
-                            pokemons.push({
-                                rest: pokemon,
-                                name: pokemon.name,
-                                id: pokemon.id,
-                                img: pokemon.sprites.front_default,
-                                types: pokemon.types.map(t => t.type.name),
-                                detailsUrl: "/pokemon/" + pokemon.id
-                            });
-                            if (--noOfPokemons === 0) {
-                                promiseResolve(pokemons);
-                            }
-                        });
-                    });
+        this.getJSON(url).then(listJson => {
+            const pokemons = [];
+            let noOfPokemons = listJson.results.length;
+            const mapper = new PokemonListMapper();
+            listJson.results.forEach(pokemon => {
+                this.getJSON(pokemon.url).then(pokemon => {
+                    pokemons.push(mapper.map(pokemon));
+                    if (--noOfPokemons === 0) {
+                        promiseResolve(pokemons);
+                    }
                 });
             });
         });
         return pokemonsPromise;
+    }
+
+    buildPokemonDetailsUrl(pokemonId) {
+        return this.domain + this.version + "pokemon/" + pokemonId;
+    }
+
+    buildPokemonAbilityUrl(pokemonId) {
+        return this.domain + this.version + "ability/" + pokemonId;
+    }
+
+    getJSON(url) {
+        return new Promise(function(resolve) {
+            fetch(url).then(resp => {
+                resp.json().then(json => resolve(json));
+            });
+        });
     }
 }
