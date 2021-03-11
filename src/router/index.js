@@ -31,6 +31,11 @@ Vue.use(VueRouter)
     path: '/pokemon/:id',
     component: PokemonDetails
   },
+  {
+    path: '/list/:offset',
+    name: 'List',
+    component: () => import(/* webpackChunkName: "about" */ '../views/List.vue')
+  }
 ]
 
 const router = new VueRouter({
